@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO Basic -->
+    <title>TẠO ĐỀ THI — Vào 10 & TN THPT | EDUGENVN</title>
+    <meta name="description" content="Ứng dụng AI tạo đề thi tự động cho kỳ thi vào lớp 10 và Tốt nghiệp THPT. Phân tích đề mẫu, tạo đề mới bám sát cấu trúc, đáp án chi tiết. Miễn phí với Gemini API." />
+    <meta name="keywords" content="tạo đề thi, đề thi vào lớp 10, đề thi tốt nghiệp THPT, AI tạo đề, gemini, edugenvn, trắc nghiệm, tự luận, đề thi 2025" />
+    <meta name="author" content="Lê Thị Thái - THPT Bình Phú - Bình Dương" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://edugenvn.vercel.app/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://edugenvn.vercel.app/" />
+    <meta property="og:title" content="TẠO ĐỀ THI — Vào 10 & TN THPT | EDUGENVN" />
+    <meta property="og:description" content="Ứng dụng AI tạo đề thi tự động. Phân tích đề mẫu → tạo đề mới bám sát cấu trúc. Hỗ trợ trắc nghiệm 3 phần & tự luận. Miễn phí!" />
+    <meta property="og:image" content="https://edugenvn.vercel.app/favicon.svg" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="EDUGENVN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="TẠO ĐỀ THI — EDUGENVN" />
+    <meta name="twitter:description" content="AI tạo đề thi vào 10 & TN THPT tự động. Miễn phí với Gemini API." />
+    <meta name="twitter:image" content="https://edugenvn.vercel.app/favicon.svg" />
+
+    <!-- PWA & Theme -->
+    <meta name="theme-color" content="#0d9488" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="EduGenVN" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "TẠO ĐỀ THI — EDUGENVN",
+      "description": "Ứng dụng AI tạo đề thi tự động cho kỳ thi vào lớp 10 và Tốt nghiệp THPT",
+      "url": "https://edugenvn.vercel.app/",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "VND"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Lê Thị Thái - THPT Bình Phú - Bình Dương"
+      },
+      "inLanguage": "vi"
+    }
+    </script>
+
+    <!-- Fonts & Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true
+        },
+        svg: { fontCache: 'global' },
+        startup: { typeset: false }
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    <style>
+      body {
+        font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
+      }
+      /* Custom scrollbar for generated content */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #c7c7c7;
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #a0a0a0;
+      }
+      /* MathJax spacing fix */
+      .MathJax { font-size: 1em !important; }
+      mjx-container { display: inline !important; margin: 0 !important; }
+
+      /* Print styles for PDF download */
+      @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; }
+        .print-content {
+          display: block !important;
+          position: static !important;
+          overflow: visible !important;
+          max-height: none !important;
+          height: auto !important;
+          padding: 20px !important;
+          font-size: 12pt !important;
+          line-height: 1.6 !important;
+          color: #000 !important;
+        }
+        .print-content h1, .print-content h2, .print-content h3 {
+          page-break-after: avoid;
+          color: #000 !important;
+        }
+        .print-content table {
+          border-collapse: collapse;
+          width: 100%;
+        }
+        .print-content th, .print-content td {
+          border: 1px solid #333;
+          padding: 6px 10px;
+          text-align: center;
+        }
+        .print-content .page-break {
+          page-break-before: always;
+        }
+        @page {
+          size: A4;
+          margin: 15mm 20mm;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "remark-gfm": "https://aistudiocdn.com/remark-gfm@^4.0.1",
+    "rehype-raw": "https://esm.sh/rehype-raw@7.0.0",
+    "docx": "https://esm.sh/docx@8.5.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-slate-50 text-slate-900 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
