@@ -6,43 +6,54 @@ export function parseExamContent(content: string) {
   const questions: { number: number; text: string; options: string[]; answerText: string }[] = [];
   
   let currentQ: any = null;
+  let qNumber = 0;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
     
-    // Phát hiện bắt đầu câu mới
-    const qMatch = line.match(/^(?:Câu|Bài)\s*(\d+)\s*[:.]\s*(.*)/i);
-    const formatQMatch = line.match(/^\*\*\*?\s*(?:Câu|Bài)\s*(\d+)\s*[:.]\s*(.*)/i);
+    // Loại bỏ ký tự markdown bold/italic bao ngoài để dễ match hơn
+    const stripped = line.replace(/\*+/g, '').replace(/#+\s*/, '').trim();
 
-    const match = qMatch || formatQMatch;
+    // Phát hiện bắt đầu câu mới — hỗ trợ nhiều format AI khác nhau:
+    // "Câu 1:", "Câu 1.", "Câu 1 ", "**Câu 1:**", "**1.**", "1.", "## Câu 1", "Bài 1:"
+    const patterns = [
+      // Format "Câu X:" hoặc "Bài X:" (phổ biến nhất)
+      stripped.match(/^(?:Câu|Bài|câu|bài)\s*(\d+)\s*[:.)]?\s*(.*)/i),
+      // Format "X." hoặc "X)" — số thứ tự đơn giản
+      stripped.match(/^(\d+)[.)]\s+(.+)/),
+    ];
+
+    const match = patterns.find(Boolean);
 
     if (match) {
       if (currentQ) {
          questions.push(currentQ);
       }
+      qNumber = parseInt(match[1]);
       currentQ = {
-        number: parseInt(match[1]),
-        text: match[2],
+        number: qNumber,
+        text: match[2] || '',
         options: [],
         answerText: ""
       };
     } else if (currentQ) {
-      // Phát hiện tùy chọn (A., B., C., D.)
-      const optMatch = line.match(/^([A-D])[.):)]\s*(.*)/i);
+      // Phát hiện tùy chọn A, B, C, D — hỗ trợ nhiều cách viết
+      const optMatch = stripped.match(/^([A-D])\s*[.):\s]\s*(.*)/i);
       
       if (optMatch) {
-         currentQ.options.push(line);
+         currentQ.options.push(stripped);
       } else {
          if (currentQ.options.length === 0) {
-             currentQ.text += '\n' + line;
-         } else {
-             const ansMatch = line.match(/^(?:Đáp\s*án|Giải|Hướng\s*dẫn)\s*[:.]?\s*(.*)/i);
-             if (ansMatch) {
-                 currentQ.answerText += line + '\n';
+             // Vẫn là phần text của câu hỏi
+             if (currentQ.text) {
+                 currentQ.text += '\n' + line;
              } else {
-                 currentQ.answerText += line + '\n';
+                 currentQ.text = line;
              }
+         } else {
+             // Lời giải / đáp án (xuất hiện sau các lựa chọn)
+             currentQ.answerText += line + '\n';
          }
       }
     }
@@ -69,13 +80,14 @@ export function parseAnswersContent(content: string) {
         const line = lines[i].trim();
         if (!line) continue;
         
-        const match = line.match(/^(?:Câu|Bài)\s*(\d+)\s*[:.]\s*(.*)/i);
-        const formatMatch = line.match(/^\*\*\*?\s*(?:Câu|Bài)\s*(\d+)\s*[:.]\s*(.*)/i);
-        const m = match || formatMatch;
+        const stripped = line.replace(/\*+/g, '').trim();
 
-        if (m) {
-            currentNum = parseInt(m[1]);
-            answersMap[currentNum] = m[2] + '\n';
+        // Match nhiều format: "Câu 1:", "**Câu 1:**", "1.", "1)"
+        const match = stripped.match(/^(?:Câu|Bài|câu|bài)?\s*(\d+)\s*[:.)]?\s*(.*)/i);
+        
+        if (match && /^(?:Câu|Bài|câu|bài|\d)/.test(stripped)) {
+            currentNum = parseInt(match[1]);
+            answersMap[currentNum] = (match[2] || '') + '\n';
         } else if (currentNum !== -1) {
             answersMap[currentNum] += line + '\n';
         }
