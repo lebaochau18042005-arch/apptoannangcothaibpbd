@@ -18,18 +18,18 @@ export async function exportExamToPptx(exam: SavedExam) {
   const pptx = new pptxgen();
   pptx.layout = "LAYOUT_16x9";
   pptx.author = "Lê Thị Thái - THPT Bình Phú - Bình Dương";
-  pptx.company = "EDUGENVN";
-  pptx.title = exam.title || "Đề kiểm tra EduGenVN";
+  pptx.company = "THPT Bình Phú";
+  pptx.title = exam.title || "Đề kiểm tra - Lê Thị Thái";
 
   // ===== SLIDE TIÊU ĐỀ =====
   const slideTitle = pptx.addSlide();
   slideTitle.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: "100%", h: "100%", fill: { color: "1e293b" } }); // Nền tối dark theme
-  slideTitle.addText("EduGenVN - Đề Thi", { x: 0.5, y: 0.5, w: 9, h: 0.5, fontSize: 18, color: "cbd5e1", align: "left" });
+  slideTitle.addText("Lê Thị Thái - THPT Bình Phú - Bình Dương", { x: 0.5, y: 0.5, w: 9, h: 0.5, fontSize: 18, color: "cbd5e1", align: "left" });
   slideTitle.addText(pptx.title, { 
     x: 1, y: 2, w: 8, h: 1.5,
     fontSize: 44, color: "ffffff", bold: true, align: "center",
   });
-  slideTitle.addText(`Môn: ${exam.subject || "Khác"} - Lớp: ${exam.difficulty}`, {
+  slideTitle.addText(`Môn: ${exam.subject || "Khác"} - Khối: ${exam.examMode || "Khác"}`, {
     x: 1, y: 3.5, w: 8, h: 1,
     fontSize: 24, color: "94a3b8", align: "center"
   });
