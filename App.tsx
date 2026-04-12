@@ -78,6 +78,14 @@ const App: React.FC = () => {
   // ====== State: Dark Mode ======
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('edugenvn_dark_mode') === '1');
 
+  // ====== State: AI Grader — đáp án tự động ======
+  const [graderInitialAnswers, setGraderInitialAnswers] = useState('');
+
+  const handleSendToGrader = (answers: string) => {
+    setGraderInitialAnswers(answers);
+    setActiveView('ai-grader');
+  };
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
     localStorage.setItem('edugenvn_dark_mode', isDarkMode ? '1' : '0');
@@ -748,7 +756,12 @@ const App: React.FC = () => {
             }}
           />
         ) : activeView === 'ai-grader' ? (
-          <AIGrader apiKey={apiKey} onClose={() => setActiveView('create')} />
+          <AIGrader
+            apiKey={apiKey}
+            onClose={() => setActiveView('create')}
+            initialAnswerKey={graderInitialAnswers}
+            initialSubject={request.subject}
+          />
         ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -842,6 +855,7 @@ const App: React.FC = () => {
                 onGenerateAnswers={handleGenerateAnswers}
                 isGeneratingAnswers={isGeneratingAnswers}
                 onRegenerateSvg={handleRegenerateSvg}
+                onSendToGrader={handleSendToGrader}
               />
             ) : !isGenerating ? (
               <div className="h-[500px] lg:h-[700px] flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-teal-200 rounded-xl bg-white/50">

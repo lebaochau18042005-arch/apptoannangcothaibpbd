@@ -25,6 +25,7 @@ interface ExamDisplayProps {
   onGenerateAnswers: () => void;      // Callback khi user bấm "Tạo đáp án"
   isGeneratingAnswers: boolean;       // Đang tạo đáp án?
   onRegenerateSvg?: (oldSvg: string, questionContext: string, editRequest: string) => Promise<string>;
+  onSendToGrader?: (answers: string) => void; // Nạp đáp án sang AI Grader
 }
 
 export const ExamDisplay: React.FC<ExamDisplayProps> = ({
@@ -33,6 +34,7 @@ export const ExamDisplay: React.FC<ExamDisplayProps> = ({
   onGenerateAnswers,
   isGeneratingAnswers,
   onRegenerateSvg,
+  onSendToGrader,
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -896,6 +898,24 @@ export const ExamDisplay: React.FC<ExamDisplayProps> = ({
           </button>
 
           <div className="w-px h-6 bg-teal-200 mx-1"></div>
+
+          {/* Nạp Đáp Án sang AI Grader */}
+          {answersContent && onSendToGrader && (
+            <button
+              onClick={() => onSendToGrader(answersContent)}
+              className="text-xs bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-md transition-all shadow-sm font-bold flex items-center gap-1.5 animate-pulse hover:animate-none"
+              title="Nạp đáp án đã tạo sang AI Grader để chấm bài"
+            >
+              🤖 Chấm Bài Ngay
+            </button>
+          )}
+
+          {/* Chưa có đáp án — nhắc tạo trước */}
+          {!answersContent && onSendToGrader && (
+            <span className="text-[10px] text-rose-400 font-medium whitespace-nowrap">
+              ← Tạo Đáp Án trước để chấm bài
+            </span>
+          )}
 
           {/* Phân tích đề */}
           <button

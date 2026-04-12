@@ -6,10 +6,12 @@ import { gradeStudentPaper, analyzeStudentWeakness } from '../services/geminiSer
 interface AIGraderProps {
   apiKey: string;
   onClose: () => void;
+  initialAnswerKey?: string;  // Đáp án tự động từ tab Tạo Đề
+  initialSubject?: string;    // Môn học tự động
 }
 
-export const AIGrader: React.FC<AIGraderProps> = ({ apiKey, onClose }) => {
-  const [answerKeyContent, setAnswerKeyContent] = useState('');
+export const AIGrader: React.FC<AIGraderProps> = ({ apiKey, onClose, initialAnswerKey = '', initialSubject = '' }) => {
+  const [answerKeyContent, setAnswerKeyContent] = useState(initialAnswerKey);
   const [studentFiles, setStudentFiles] = useState<UploadedFile[]>([]);
   const [selectedModel, setSelectedModel] = useState<AIModelId>('gemini-2.5-flash');
   
@@ -19,7 +21,7 @@ export const AIGrader: React.FC<AIGraderProps> = ({ apiKey, onClose }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [subjectLabel, setSubjectLabel] = useState('');
+  const [subjectLabel, setSubjectLabel] = useState(initialSubject);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisText, setAnalysisText] = useState('');
   const [analysisError, setAnalysisError] = useState('');
