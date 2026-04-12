@@ -277,7 +277,7 @@ interface QuestionBankProps {
 export const QuestionBank: React.FC<QuestionBankProps> = ({ onClose }) => {
   const [questions, setQuestions] = useState<BankQuestion[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterGrade, setFilterGrade] = useState<'all' | '10' | '12'>('all');
+  const [filterGrade, setFilterGrade] = useState<'all' | '10' | '11' | '12'>('all');
   const [filterLevel, setFilterLevel] = useState<'all' | BankQuestion['level']>('all');
   const [filterTopic, setFilterTopic] = useState('all');
   const [filterSubject, setFilterSubject] = useState<string>('all');
@@ -290,7 +290,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onClose }) => {
   const [formAnswer, setFormAnswer] = useState('');
   const [formSubject, setFormSubject] = useState('Toán');
   const [formTopic, setFormTopic] = useState(getTopicsForSubject('Toán')[0]);
-  const [formGrade, setFormGrade] = useState<'10' | '12'>('10');
+  const [formGrade, setFormGrade] = useState<'10' | '11' | '12'>('10');
   const [formLevel, setFormLevel] = useState<BankQuestion['level']>('NB');
   const [formTags, setFormTags] = useState('');
 
@@ -298,7 +298,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onClose }) => {
   const [isImportingFile, setIsImportingFile] = useState(false);
   const [importParsedQuestions, setImportParsedQuestions] = useState<ParsedQuestion[]>([]);
   const [showImportPreview, setShowImportPreview] = useState(false);
-  const [importGrade, setImportGrade] = useState<'10' | '12'>('10');
+  const [importGrade, setImportGrade] = useState<'10' | '11' | '12'>('10');
   const [importLevel, setImportLevel] = useState<BankQuestion['level']>('NB');
   const [importSubject, setImportSubject] = useState('Toán');
   const [importTopic, setImportTopic] = useState(getTopicsForSubject('Toán')[0]);
@@ -639,7 +639,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onClose }) => {
                   <label className="block text-[10px] font-semibold text-slate-600 mb-1">Khối lớp</label>
                   <select
                     value={importGrade}
-                    onChange={(e) => setImportGrade(e.target.value as '10' | '12')}
+                    onChange={(e) => setImportGrade(e.target.value as '10' | '11' | '12')}
                     className="w-full rounded-md border border-slate-300 bg-white py-1.5 px-2 text-xs focus:border-amber-500 outline-none"
                   >
                     <option value="10">Lớp 10 (Vào 10)</option>
@@ -853,10 +853,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onClose }) => {
                 <label className="block text-[10px] font-semibold text-slate-600 mb-1">Khối lớp</label>
                 <select
                   value={formGrade}
-                  onChange={(e) => setFormGrade(e.target.value as '10' | '12')}
+                  onChange={(e) => setFormGrade(e.target.value as '10' | '11' | '12')}
                   className="w-full rounded-md border border-slate-300 bg-slate-50 py-1.5 px-2 text-xs focus:border-teal-500 outline-none"
                 >
                   <option value="10">Lớp 10 (Vào 10)</option>
+                  <option value="11">Lớp 11</option>
                   <option value="12">Lớp 12 (TN THPT)</option>
                 </select>
               </div>

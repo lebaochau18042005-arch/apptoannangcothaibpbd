@@ -8,6 +8,7 @@ import { LiveStudentPortal } from './components/LiveStudentPortal';
 import { ExamMode, ExamFormat, Difficulty, ExamRequest, UploadedFile, SavedExam, QuestionSource, BankQuestion } from './types';
 import { generateExamOnly, generateAnswers, regenerateSvg } from './services/geminiService';
 import { apiKeyManager } from './services/apiKeyManager';
+import { AIGrader } from './components/AIGrader';
 
 // ============================================
 // SESSION PERSISTENCE — Constants
@@ -72,7 +73,7 @@ const App: React.FC = () => {
   const currentHistoryIdRef = useRef<string | null>(null);
 
   // ====== State: Active View ======
-  const [activeView, setActiveView] = useState<'create' | 'bank' | 'history' | 'student-portal'>('create');
+  const [activeView, setActiveView] = useState<'create' | 'bank' | 'history' | 'student-portal' | 'ai-grader'>('create');
 
   // ============================================
   // KHỞI TẠO
@@ -543,7 +544,7 @@ const App: React.FC = () => {
                   <strong>Đã lưu lúc:</strong> {new Date(pendingSession.savedAt).toLocaleString('vi-VN')}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {pendingSession.request.examMode === ExamMode.Vao10 ? '📐 Vào lớp 10' : '🎓 TN THPT'}
+                  {pendingSession.request.examMode === ExamMode.Vao10 ? '🏫 Vào lớp 10' : '🎓 TN THPT'}
                   {' • '}
                   {pendingSession.answersContent ? '✅ Có đề + đáp án' : '📝 Có đề bài'}
                 </p>
@@ -632,6 +633,18 @@ const App: React.FC = () => {
               👩‍🎓 Vào Phòng Thi
             </button>
 
+            {/* Tab: Chấm Điểm AI */}
+            <button
+              onClick={() => setActiveView('ai-grader')}
+              className={`flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                activeView === 'ai-grader'
+                  ? 'bg-rose-600 border-rose-700 text-white shadow-md'
+                  : 'bg-white border-rose-200 text-rose-700 hover:bg-rose-50'
+              }`}
+            >
+              🤖 Chấm Bài
+            </button>
+
             {/* Nút lưu/xóa phiên */}
             {examContent && activeView === 'create' && (
               <div className="hidden sm:flex items-center gap-1.5">
@@ -713,6 +726,8 @@ const App: React.FC = () => {
               setError(null);
             }}
           />
+        ) : activeView === 'ai-grader' ? (
+          <AIGrader apiKey={apiKey} onClose={() => setActiveView('create')} />
         ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 

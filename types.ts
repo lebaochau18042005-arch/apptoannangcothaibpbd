@@ -79,7 +79,7 @@ export interface BankQuestion {
   answer: string;               // Đáp án / lời giải
   subject?: string;             // Môn học (Toán, Vật Lý, Hóa Học, ...)
   topic: string;                // Chủ đề (VD: "Hàm số", "Đạo hàm")
-  grade: '10' | '12';          // Khối lớp
+  grade: '10' | '11' | '12';   // Khối lớp
   level: 'NB' | 'TH' | 'VD' | 'VDC';  // Nhận biết / Thông hiểu / Vận dụng / Vận dụng cao
   tags: string[];               // Tags tự do
   createdAt: string;            // ISO date
@@ -100,4 +100,24 @@ export interface SavedExam {
   difficulty: string;
   model: string;
   createdAt: string;            // ISO date
+}
+
+// ============================================
+// CHẤM ĐIỂM TỰ ĐỘNG (AUTO GRADER)
+// ============================================
+export interface GradedQuestion {
+  questionNumber: string | number; // "1", "2" hoặc "Phần I - Câu 1"
+  studentAnswer: string;           // Khả năng nhận diện: "A", "Học sinh chọn True", hoặc đoạn trích tự luận
+  correctAnswer: string;           // "A", hoặc "Ý chính 1, Ý chính 2" (từ barem)
+  isCorrect: boolean;              // Đối với trắc nghiệm; tự luận có thể là partial
+  earnedPoints?: number;           // Điểm đạt được (tự luận đặc biệt hữu ích)
+  maxPoints?: number;              // Điểm tối đa của câu
+  explanation?: string;            // "Học sinh thiếu ý B..."
+}
+
+export interface GradingResult {
+  totalScore: number;
+  maxScore: number;
+  gradedQuestions: GradedQuestion[];
+  overallFeedback: string;
 }

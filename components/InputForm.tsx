@@ -16,6 +16,55 @@ function loadBankQuestions(): BankQuestion[] {
   }
 }
 
+// ============================================
+// CACHE ĐỀ MẤU — Lưu/Load/Xóa theo môn + kỳ thi
+// ============================================
+const SAMPLE_CACHE_PREFIX = 'edugenvn_sample_cache_';
+
+function getSampleCacheKey(subject: string, examMode: string): string {
+  return `${SAMPLE_CACHE_PREFIX}${subject}_${examMode}`;
+}
+
+function saveSampleCache(subject: string, examMode: string, files: UploadedFile[]): void {
+  try {
+    const key = getSampleCacheKey(subject, examMode);
+    // Chỉ lưu các file text (không lưu ảnh base64 quá lớn)
+    const lightFiles = files.filter(f => f.mimeType === 'text/plain' || f.size < 200 * 1024);
+    localStorage.setItem(key, JSON.stringify(lightFiles));
+  } catch (e) {
+    console.warn('Đãy localStorage đầy, không thể lưu đề mẫu:', e);
+  }
+}
+
+function loadSampleCache(subject: string, examMode: string): UploadedFile[] {
+  try {
+    const key = getSampleCacheKey(subject, examMode);
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+function clearSampleCache(subject: string, examMode: string): void {
+  try {
+    const key = getSampleCacheKey(subject, examMode);
+    localStorage.removeItem(key);
+  } catch {}
+}
+
+function hasSampleCacheFor(subject: string, examMode: string): boolean {
+  try {
+    const key = getSampleCacheKey(subject, examMode);
+    const item = localStorage.getItem(key);
+    if (!item) return false;
+    const parsed: UploadedFile[] = JSON.parse(item);
+    return parsed.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 const BANK_LEVELS: { value: BankQuestion['level']; label: string; color: string }[] = [
   { value: 'NB', label: 'Nhận biết', color: 'bg-green-100 text-green-700' },
   { value: 'TH', label: 'Thông hiểu', color: 'bg-blue-100 text-blue-700' },
@@ -51,6 +100,10 @@ export const InputForm: React.FC<InputFormProps> = ({
   const [bankFilterTopic, setBankFilterTopic] = useState('all');
   const [bankSearchQuery, setBankSearchQuery] = useState('');
 
+  // Cache đề mẫu state
+  const [cacheStatus, setCacheStatus] = useState<'none' | 'loaded' | 'saved'>('none');
+  const [cachedFileName, setCachedFileName] = useState<string>('');
+
   // Load ngân hàng câu hỏi khi mount hoặc khi switch sang FromBank
   useEffect(() => {
     if (request.questionSource === QuestionSource.FromBank) {
@@ -58,11 +111,31 @@ export const InputForm: React.FC<InputFormProps> = ({
     }
   }, [request.questionSource]);
 
+  // AUTO-LOAD cache đề mẫu khi đổi môn hoặc kỳ thi
+  useEffect(() => {
+    const cached = loadSampleCache(request.subject, request.examMode);
+    if (cached.length > 0 && request.sampleExamFiles.length === 0) {
+      // Tự động nạp vào request
+      onFilesChange('sampleExamFiles', cached);
+      setCacheStatus('loaded');
+      setCachedFileName(cached[0]?.name?.replace(' (text)', '') || 'đề mẫu');
+    } else if (hasSampleCacheFor(request.subject, request.examMode)) {
+      setCacheStatus('loaded');
+      setCachedFileName(cached[0]?.name?.replace(' (text)', '') || 'đề mẫu');
+    } else {
+      setCacheStatus('none');
+      setCachedFileName('');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request.subject, request.examMode]);
+
   // Danh sách chủ đề unique từ ngân hàng
   const bankTopics = Array.from(new Set(bankQuestions.map(q => q.topic))).sort();
 
-  // Lọc câu hỏi ngân hàng
+  // Lọc câu hỏi ngân hàng (thêm lọc theo môn học hiện tại)
   const filteredBankQuestions = bankQuestions.filter(q => {
+    // Lọc theo môn học đang chọn (nếu câu hỏi có trường subject)
+    if (q.subject && q.subject !== request.subject) return false;
     if (bankFilterLevel !== 'all' && q.level !== bankFilterLevel) return false;
     if (bankFilterTopic !== 'all' && q.topic !== bankFilterTopic) return false;
     if (bankSearchQuery) {
@@ -72,7 +145,11 @@ export const InputForm: React.FC<InputFormProps> = ({
     return true;
   });
 
+  // Kiểm tra câu đã chọn nhưng sai môn
   const selectedIds = request.selectedBankQuestionIds || [];
+  const wrongSubjectCount = selectedIds.length > 0
+    ? bankQuestions.filter(q => selectedIds.includes(q.id) && q.subject && q.subject !== request.subject).length
+    : 0;
   const selectedCount = selectedIds.length;
 
   const toggleBankQuestion = (id: string) => {
@@ -171,7 +248,15 @@ export const InputForm: React.FC<InputFormProps> = ({
       if (Array.isArray(r)) return r;
       return [r];
     });
-    onFilesChange(type, [...existingFiles, ...validFiles]);
+    const allSampleFiles = [...existingFiles, ...validFiles];
+    onFilesChange(type, allSampleFiles);
+
+    // Tự động lưu cache nếu là đề mẫu
+    if (type === 'sampleExamFiles' && validFiles.length > 0) {
+      saveSampleCache(request.subject, request.examMode, allSampleFiles);
+      setCacheStatus('saved');
+      setCachedFileName(validFiles[0]?.name?.replace(' (text)', '') || 'đề mẫu');
+    }
   };
 
   // Upload file qua input click
@@ -304,8 +389,9 @@ export const InputForm: React.FC<InputFormProps> = ({
           </button>
         </div>
 
-        {/* Hình thức đề — chỉ hiện khi Vào 10 + môn Toán */}
-        {request.examMode === ExamMode.Vao10 && request.subject === 'Toán' && (
+        {/* Hình thức đề — hiện khi Vào 10 + Toán, hoặc TN THPT + Vật Lý/Hóa Học */}
+        {((request.examMode === ExamMode.Vao10 && request.subject === 'Toán') ||
+          (request.examMode === ExamMode.TotNghiep && (request.subject === 'Vật Lý' || request.subject === 'Hóa Học'))) && (
           <div className="mt-4">
             <label className="block text-xs font-semibold text-slate-700 mb-2">Hình thức đề thi</label>
             <div className="grid grid-cols-2 gap-2">
@@ -319,8 +405,12 @@ export const InputForm: React.FC<InputFormProps> = ({
                 }`}
               >
                 <div className="font-bold text-xs text-slate-800">📋 Trắc nghiệm</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">3 phần: TN + Đ/S + TL ngắn • 90p</div>
-                <div className="text-[9px] text-teal-600 font-semibold mt-1">Cấu trúc mới 2025</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  {request.examMode === ExamMode.Vao10
+                    ? '3 phần: TN + Đ/S + TL ngắn • 90p'
+                    : 'TN + Đ/S + TL ngắn • 50 phút'}
+                </div>
+                <div className="text-[9px] text-teal-600 font-semibold mt-1">Chuẩn BGDDT 2025</div>
               </button>
               <button
                 type="button"
@@ -332,18 +422,27 @@ export const InputForm: React.FC<InputFormProps> = ({
                 }`}
               >
                 <div className="font-bold text-xs text-slate-800">✍️ Tự luận</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">5-7 bài tự luận • 120 phút</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  {request.examMode === ExamMode.Vao10 ? '5-7 bài tự luận • 120 phút' : '3-5 bài tự luận • 90-120 phút'}
+                </div>
                 <div className="text-[9px] text-slate-400 font-medium mt-1">Truyền thống</div>
               </button>
             </div>
           </div>
         )}
 
-        {/* Ghi chú cho các môn khác */}
-        {request.subject !== 'Toán' && (
+        {/* Ghi chú cho các môn khác (trừ các môn đã có cấu trúc riêng) */}
+        {!['Toán', 'Vật Lý', 'Hóa Học', 'Lịch Sử', 'Địa Lý'].includes(request.subject) && (
           <div className="mt-3 bg-sky-50 border border-sky-200 rounded-lg p-3">
             <p className="text-[11px] text-sky-700 font-medium">
               💡 AI sẽ tự phân tích cấu trúc đề từ <strong>đề mẫu</strong> bạn tải lên. Nếu không có đề mẫu, AI sẽ tạo đề theo cấu trúc chuẩn Bộ GD&ĐT.
+            </p>
+          </div>
+        )}
+        {['Vật Lý', 'Hóa Học', 'Lịch Sử', 'Địa Lý'].includes(request.subject) && request.examMode === ExamMode.TotNghiep && (
+          <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+            <p className="text-[11px] text-emerald-700 font-medium">
+              ✅ AI sẽ dùng đú́ng <strong>cấu trúc chuẩn BGDDT 2025</strong> cho môn {request.subject} (3 phần: TN nhiều lựa chọn + Đú́ng-Sai + Trả lời ngắn).
             </p>
           </div>
         )}
@@ -359,7 +458,49 @@ export const InputForm: React.FC<InputFormProps> = ({
           </svg>
           Tải lên tài liệu
         </h2>
-        <p className="text-xs text-slate-500 mb-4">AI phân tích đề mẫu lấy cấu trúc + dùng tài liệu tham khảo để ra câu hỏi cùng dạng</p>
+        <p className="text-xs text-slate-500 mb-3">AI phân tích đề mẫu lấy cấu trúc + dùng tài liệu tham khảo để ra câu hỏi cùng dạng</p>
+
+        {/* === BANNER CACHE ĐỀ MẪU === */}
+        {cacheStatus === 'loaded' && (
+          <div className="mb-3 flex items-center gap-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-3">
+            <span className="text-xl flex-shrink-0">💾</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-emerald-800">Đề mẫu đã lưu sẵn</p>
+              <p className="text-[10px] text-emerald-600 truncate mt-0.5">
+                📄 {cachedFileName} — {request.subject} / {request.examMode === 'vao10' ? 'Vào 10' : 'TN THPT'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                clearSampleCache(request.subject, request.examMode);
+                onFilesChange('sampleExamFiles', []);
+                setCacheStatus('none');
+                setCachedFileName('');
+              }}
+              className="flex-shrink-0 text-[10px] px-2.5 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 font-semibold rounded-lg transition-colors"
+            >
+              🗑️ Xóa
+            </button>
+          </div>
+        )}
+        {cacheStatus === 'saved' && (
+          <div className="mb-3 flex items-center gap-2 bg-sky-50 border border-sky-200 rounded-xl px-4 py-2.5">
+            <span className="text-base">✅</span>
+            <p className="text-[11px] text-sky-700 font-medium flex-1">
+              Đề mẫu <strong>đã được lưu tự động</strong> — lần sau mở app sẽ tự nạp lại!
+            </p>
+          </div>
+        )}
+        {cacheStatus === 'none' && (
+          <div className="mb-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+            <span className="text-base">💡</span>
+            <p className="text-[11px] text-amber-700 flex-1">
+              Tải đề mẫu 1 lần — AI sẽ <strong>tự nhớ</strong> cho lần sau (không cần nạp lại)
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-3">
           {/* === Đề mẫu === */}
@@ -654,6 +795,9 @@ export const InputForm: React.FC<InputFormProps> = ({
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${lv.color}`}>{lv.label}</span>
                               <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700">{q.topic}</span>
                               <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">Lớp {q.grade}</span>
+                              {q.subject && q.subject !== request.subject && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">⚠ {q.subject}</span>
+                              )}
                             </div>
                           </div>
                         </label>
@@ -662,9 +806,17 @@ export const InputForm: React.FC<InputFormProps> = ({
                   )}
                 </div>
 
+                {/* Cảnh báo sai môn */}
+                {wrongSubjectCount > 0 && (
+                  <div className="mt-3 bg-amber-50 border border-amber-300 rounded-lg p-3">
+                    <p className="text-[11px] text-amber-700 font-medium">
+                      ⚠️ <strong>{wrongSubjectCount} câu</strong> đã chọn thuộc môn khác (không phải {request.subject}). AI sẽ vẫn dùng các câu này nhưng có thể không phù hợp.
+                    </p>
+                  </div>
+                )}
                 {/* Tổng kết */}
                 {selectedCount > 0 && (
-                  <div className="mt-3 bg-teal-50 border border-teal-200 rounded-lg p-3">
+                  <div className="mt-2 bg-teal-50 border border-teal-200 rounded-lg p-3">
                     <p className="text-[11px] text-teal-700 font-medium">
                       ✅ Đã chọn <strong>{selectedCount}</strong> câu hỏi từ ngân hàng. AI sẽ sắp xếp và format thành đề thi hoàn chỉnh.
                     </p>

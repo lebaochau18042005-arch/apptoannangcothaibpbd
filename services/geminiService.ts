@@ -1,4 +1,4 @@
-import { SYSTEM_INSTRUCTION, SYSTEM_INSTRUCTION_GENERAL, STRUCTURE_VAO_10, STRUCTURE_VAO_10_TRACNGHIEM, STRUCTURE_TOT_NGHIEP, FALLBACK_ORDER } from '../constants';
+import { SYSTEM_INSTRUCTION, SYSTEM_INSTRUCTION_GENERAL, STRUCTURE_VAO_10, STRUCTURE_VAO_10_TRACNGHIEM, STRUCTURE_TOT_NGHIEP, FALLBACK_ORDER, getSubjectConfig } from '../constants';
 import { ExamRequest, ExamMode, ExamFormat, AIModelId, UploadedFile, QuestionSource, BankQuestion } from '../types';
 
 // ============================================
@@ -100,8 +100,9 @@ export const generateExamOnly = async (
   const isVao10 = request.examMode === ExamMode.Vao10;
   const isTracNghiem = request.examFormat === ExamFormat.TracNghiem;
 
-  // Chọn system instruction theo môn
-  const sysInstruction = isMath ? SYSTEM_INSTRUCTION : SYSTEM_INSTRUCTION_GENERAL;
+  // Lấy config theo môn học (instruction + cấu trúc đề)
+  const subjectConfig = getSubjectConfig(subject);
+  const sysInstruction = subjectConfig.systemInstruction;
 
   // Xác định label & cấu trúc
   let examLabel: string;
@@ -125,18 +126,30 @@ export const generateExamOnly = async (
       structureGuide = STRUCTURE_TOT_NGHIEP;
       timeLimit = '90';
     }
-  } else {
-    // Các môn khác: cấu trúc linh hoạt, AI tự phân tích từ đề mẫu
+  } else if (subjectConfig.structureTotNghiep) {
+    // Môn có cấu trúc riêng (Lý, Hóa, Sử, Địa)
     const modeLabel = isVao10 ? 'TUYỂN SINH VÀO LỚP 10' : 'TỐT NGHIỆP THPT';
-    examLabel = `${modeLabel}`;
+    examLabel = modeLabel;
+    if (isVao10) {
+      timeLimit = '60-120';
+      structureGuide = subjectConfig.structureVao10 || `CẤU TRÚC ĐỀ THI MÔN ${subject.toUpperCase()} — ${modeLabel}: Tạo đề theo cấu trúc chuẩn Bộ GD&ĐT. Phân bố: Nhận biết → Thông hiểu → Vận dụng → Vận dụng cao.`;
+    } else {
+      timeLimit = '50';
+      structureGuide = subjectConfig.structureTotNghiep;
+    }
+  } else {
+    // Các môn khác: cấu trúc linh hoạt
+    const modeLabel = isVao10 ? 'TUYỂN SINH VÀO LỚP 10' : 'TỐT NGHIỆP THPT';
+    examLabel = modeLabel;
     timeLimit = isVao10 ? '60-120' : '50-90';
     structureGuide = `
 CẤU TRÚC ĐỀ THI MÔN ${subject.toUpperCase()} — KỲ THI ${modeLabel}:
-- HÃY PHÂN TÍCH CẤU TRÚC TỪ ĐỀ MẪU (nếu có) để xác định: số phần, số câu mỗi phần, dạng câu hỏi (trắc nghiệm/tự luận/đúng-sai), thời gian, thang điểm
+- HÃY PHÂN TÍCH CẤU TRÚC TỪ ĐỀ MẪU (nếu có) để xác định: số phần, số câu mỗi phần, dạng câu hỏi, thời gian, thang điểm
 - Nếu KHÔNG CÓ ĐỀ MẪU: Tạo đề theo cấu trúc chuẩn của kỳ thi ${modeLabel} môn ${subject} theo quy định Bộ GD&ĐT hiện hành
 - Đảm bảo phân bố kiến thức và mức độ khó phù hợp: Nhận biết → Thông hiểu → Vận dụng → Vận dụng cao
 `;
   }
+
 
   const isFromBank = request.questionSource === QuestionSource.FromBank;
 
@@ -282,7 +295,7 @@ export const generateAnswers = async (
   const isTuLuan = isVao10 && !isTracNghiem;
   const hasTracNghiem = !isTuLuan;
 
-  const sysInstruction = isMath ? SYSTEM_INSTRUCTION : SYSTEM_INSTRUCTION_GENERAL;
+  const sysInstruction = getSubjectConfig(subject).systemInstruction;
 
   let examLabel = 'TỐT NGHIỆP THPT';
   if (isVao10) examLabel = isTracNghiem ? 'TUYỂN SINH VÀO LỚP 10 (Trắc nghiệm)' : 'TUYỂN SINH VÀO LỚP 10 (Tự luận)';
@@ -372,3 +385,91 @@ BẮT ĐẦU VẼ (trả về ĐÚNG 1 thẻ <svg>):
   }
   return svgMatch[0];
 };
+
+// ============================================
+// CHẤM ĐIỂM BÀI LÀM QUA ẢNH (AI AUTO GRADER)
+// ============================================
+export const gradeStudentPaper = async (
+  apiKey: string,
+  answerKeyContent: string,
+  studentFiles: UploadedFile[],
+  modelId: AIModelId,
+  onStatus?: (msg: string) => void,
+): Promise<any> => { // Trả về GradingResult
+  // Upload ảnh/file bài làm của học sinh format cho API raw
+  const parts: any[] = [];
+  
+  studentFiles.forEach(file => {
+    parts.push({
+      inline_data: {
+        data: file.base64,
+        mime_type: file.mimeType,
+      }
+    });
+  });
+
+  const requestPrompt = `Đây là Đáp Án Chuẩn / Hướng Dẫn Chấm:
+---
+${answerKeyContent}
+---
+Dưới đây là hình ảnh/file bài làm của học sinh. Hãy kết hợp yêu cầu hệ thống ở trên để chấm bài và phân tích. BẮT BUỘC trả về ĐÚNG 1 CỤM JSON HỢP LỆ THEO ĐÚNG CẤU TRÚC ĐÃ YÊU CẦU, KHÔNG XUẤT MARKDOWN, KHÔNG CÓ BẤT KỲ COMMENT TEXT NÀO, BẮT ĐẦU VỚI { VÀ KẾT THÚC VỚI }.`;
+
+  parts.push({ text: requestPrompt });
+
+  const systemPrompt = `BẠN LÀ MỘT GIÁM KHẢO CHUYÊN NGHIỆP, TOÀN DIỆN VÀ VÔ CÙNG NGHIÊM NGẶT.
+Bạn được cung cấp ĐÁP ÁN CHUẨN (HƯỚNG DẪN CHẤM / BAREM YÊU CẦU CẦN ĐẠT) và HÌNH ẢNH/FILE CHỤP BÀI LÀM CỦA HỌC SINH.
+Nhiệm vụ của bạn là lấy đáp án chuẩn làm THƯỚC ĐO DUY NHẤT để chấm bài tự động.
+
+📋 CHIẾN LƯỢC CHẤM CHẶT CHẼ:
+1. ĐỐI VỚI CÂU TRẮC NGHIỆM (Chỉ có ký tự A,B,C,D / Đúng Sai / Điền Khuyết gọn nhẹ):
+   - Quét kỹ hình ảnh (Double-check OCR) để đọc nét bút, nét khoanh, hoặc đáp án đã điền của học sinh.
+   - So khớp tuyệt đối. Sai lệch 1 đáp án/ký tự -> Phán định sai không cho điểm.
+
+2. ĐỐI VỚI CÂU TỰ LUẬN VÀ MÔN NGỮ VĂN (BẮT BUỘC CHẤM THEO ĐỌC Ý):
+   - Đọc kỹ Barem điểm trong đáp án (nếu có chia nhỏ từng 0.5đ, 0.25đ).
+   - "ĐỌC Ý ĐỂ CHẤM" (Read for intent): Học sinh viết tự luận/văn không bao giờ giống 100% từng chữ trong đáp án, mà phải đảm bảo CÓ CHỨA Ý TƯỞNG CỐT LÕI (Key Arguments).
+   - Có n ý chuẩn thì cho n phần điểm. Dùng từ đồng nghĩa nhưng lột tả đúng bản chất -> Vẫn tính điểm. Viết dòng dài nhưng lan man, không trúng trọng tâm Barem -> Không tính điểm.
+   - Trừ điểm khách quan nếu thiếu sót. Cộng điểm nếu có ý đúng trong Barem.
+
+3. YÊU CẦU ĐỊNH DẠNG JSON:
+BẠN PHẢI TRẢ VỀ CHÍNH XÁC MỘT ĐỐI TƯỢNG JSON (Không bọc markdowns \`\`\`json) theo cấu trúc (VÍ DỤ SAU):
+{
+  "totalScore": 8.5,
+  "maxScore": 10.0,
+  "overallFeedback": "Tổng quan bài làm...",
+  "gradedQuestions": [
+    {
+      "questionNumber": "1",
+      "studentAnswer": "Học sinh chọn A",
+      "correctAnswer": "A",
+      "isCorrect": true,
+      "earnedPoints": 0.25,
+      "maxPoints": 0.25,
+      "explanation": "Khớp đáp án"
+    }
+  ]
+}
+BẮT BUỘC: ĐỐI TƯỢNG JSON LÀ KẾT QUẢ ĐẦU RA DUY NHẤT. KHÔNG IN BẤT KỲ VĂN BẢN NÀO KHÁC BÊN NGOÀI NGOẶC NHỌN {}.
+`;
+
+  try {
+    const rawResult = await callGeminiWithFallback(apiKey, modelId, parts, systemPrompt, onStatus);
+
+    // Filter clear markdown
+    let cleanJSON = rawResult.trim();
+    if (cleanJSON.startsWith('```json')) {
+      cleanJSON = cleanJSON.replace(/^```json/, '');
+      cleanJSON = cleanJSON.replace(/```$/, '');
+    } else if (cleanJSON.startsWith('```')) {
+      cleanJSON = cleanJSON.replace(/^```/, '');
+      cleanJSON = cleanJSON.replace(/```$/, '');
+    }
+    
+    const parsed = JSON.parse(cleanJSON.trim());
+    return parsed;
+  } catch (error: any) {
+    console.error('Lỗi khi AI chấm bài: ', error);
+    throw new Error('Đã xảy ra lỗi trong quá trình phân tích bài làm: ' + error.message);
+  }
+};
+
