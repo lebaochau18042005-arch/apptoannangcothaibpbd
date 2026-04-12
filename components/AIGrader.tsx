@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { AIModelId, UploadedFile, GradingResult } from '../types';
 import { AI_MODELS } from '../constants';
-import { gradeStudentPaper } from '../services/geminiService';
+import { gradeStudentPaper, analyzeStudentWeakness } from '../services/geminiService';
 
 interface AIGraderProps {
   apiKey: string;
@@ -19,6 +19,10 @@ export const AIGrader: React.FC<AIGraderProps> = ({ apiKey, onClose }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [subjectLabel, setSubjectLabel] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisText, setAnalysisText] = useState('');
+  const [analysisError, setAnalysisError] = useState('');
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputFiles = event.target.files;
@@ -105,6 +109,23 @@ export const AIGrader: React.FC<AIGraderProps> = ({ apiKey, onClose }) => {
     }
   };
 
+  const startDeepAnalysis = async () => {
+    if (!result) return;
+    setIsAnalyzing(true);
+    setAnalysisText('');
+    setAnalysisError('');
+    try {
+      const text = await analyzeStudentWeakness(
+        apiKey, result, subjectLabel || 'Chung', selectedModel, (msg) => setAnalysisText(prev => prev + msg + '\n')
+      );
+      setAnalysisText(text);
+    } catch (err: any) {
+      setAnalysisError(err.message || 'Lỗi phân tích');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto space-y-4">
       {/* HEADER */}
@@ -118,6 +139,19 @@ export const AIGrader: React.FC<AIGraderProps> = ({ apiKey, onClose }) => {
         >
           ← Quay Lại
         </button>
+      </div>
+
+      {/* INPUT MÔN HỌC ↴ mới: có ô nhập môn */}
+      <div className="flex gap-3 items-center bg-white rounded-xl border border-teal-100 p-3 shadow-sm">
+        <span className="text-sm font-semibold text-slate-600 whitespace-nowrap">Môn học:</span>
+        <input
+          type="text"
+          placeholder="VD: Toán 12, Ngữ Văn 11, Vật Lý TN THPT..."
+          value={subjectLabel}
+          onChange={e => setSubjectLabel(e.target.value)}
+          className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:border-teal-400 outline-none"
+        />
+        <span className="text-[10px] text-slate-400">Dùng cho báo cáo Phân Tích Nâng Cao</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -283,6 +317,46 @@ export const AIGrader: React.FC<AIGraderProps> = ({ apiKey, onClose }) => {
           </div>
         </div>
       </div>
+
+      {/* PANEL PHÂN TÍCH NÂNG CAO */}
+      {result && (
+        <div className="bg-white rounded-xl shadow-md border border-indigo-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-indigo-800 text-sm flex items-center gap-2">
+              <span className="text-xl">🧠</span> Phân Tích Nâng Cao (AI Agent)
+            </h3>
+            <button
+              onClick={startDeepAnalysis}
+              disabled={isAnalyzing}
+              className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-md disabled:opacity-50 flex items-center gap-2 transition-all"
+            >
+              {isAnalyzing ? (
+                <><svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Đang phân tích sâu...</>
+              ) : (
+                <>🧠 Phân Tích Điểm Yếu và Gợi Ý Bài Tập</>
+              )}
+            </button>
+          </div>
+
+          {!analysisText && !isAnalyzing && !analysisError && (
+            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center text-slate-500 text-xs">
+              💡 Nhấn nút trên để AI phân tích sâu: điểm yếu, bài tập bổ trợ, dự đoán điểm thi thực tế...
+            </div>
+          )}
+
+          {analysisError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl">
+              ❌ Lỗi: {analysisError}
+            </div>
+          )}
+
+          {analysisText && (
+            <div className="prose prose-sm max-w-none bg-indigo-50/40 rounded-xl p-4 overflow-y-auto max-h-96 text-slate-700 leading-relaxed text-sm whitespace-pre-wrap">
+              {analysisText}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

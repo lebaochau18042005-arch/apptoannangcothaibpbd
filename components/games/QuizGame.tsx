@@ -16,6 +16,8 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onClose }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [correctOptionIndex, setCorrectOptionIndex] = useState<number | null>(null);
+  const [shakeIndex, setShakeIndex] = useState<number | null>(null);
+  const [timer, setTimer] = useState(30);
 
   // Chỉ lấy những câu hỏi CÓ TÙY CHỌN (Trắc nghiệm)
   const quizQuestions = questions.filter(q => q.options.length > 0);
@@ -43,7 +45,19 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onClose }) => {
          
          setCorrectOptionIndex(foundCorrect);
      }
+     setTimer(30); // reset timer khi đổi câu
   }, [currentIndex, quizQuestions]);
+
+  // Timer đếm ngược
+  useEffect(() => {
+    if (isRevealed || isFinished) return;
+    if (timer <= 0) {
+      setIsRevealed(true); // hết giờ -> tự reveal
+      return;
+    }
+    const id = setTimeout(() => setTimer(t => t - 1), 1000);
+    return () => clearTimeout(id);
+  }, [timer, isRevealed, isFinished]);
 
   if (!quizQuestions || quizQuestions.length === 0) {
     return (
@@ -64,9 +78,12 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onClose }) => {
     setSelectedOption(idx);
     setIsRevealed(true);
 
-    // Tính điểm
     if (correctOptionIndex === idx) {
-        setScore(prev => prev + 1);
+      setScore(prev => prev + 1);
+    } else {
+      // Shake animation khi sai
+      setShakeIndex(idx);
+      setTimeout(() => setShakeIndex(null), 600);
     }
   };
 
@@ -128,7 +145,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onClose }) => {
              <h2 className="font-bold text-slate-800 text-lg hidden sm:block">Trò chơi Trắc Nghiệm</h2>
          </div>
 
-         {/* Progress Bar */}
+         {/* Timer + Score + Progress */}
          <div className="flex-1 max-w-md mx-6">
             <div className="flex justify-between text-xs font-bold text-slate-400 mb-2">
                 <span>Tiến độ</span>
@@ -140,6 +157,13 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onClose }) => {
                   style={{ width: `${((currentIndex) / quizQuestions.length) * 100}%` }}
                 ></div>
             </div>
+         </div>
+
+         {/* Timer Ring */}
+         <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 font-black text-sm transition-colors ${
+           timer <= 5 ? 'border-rose-400 text-rose-600 animate-pulse' : timer <= 10 ? 'border-amber-400 text-amber-600' : 'border-indigo-300 text-indigo-600'
+         }`}>
+           {timer}
          </div>
 
          <div className="font-black text-indigo-600 text-xl tracking-tighter">
@@ -198,7 +222,9 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onClose }) => {
                     <div 
                        key={idx} 
                        onClick={() => handleSelectOption(idx)}
-                       className={`group relative p-4 flex items-center gap-4 rounded-2xl border-2 transition-all duration-200 ${stateClass}`}
+                       className={`group relative p-4 flex items-center gap-4 rounded-2xl border-2 transition-all duration-200 ${stateClass} ${
+                          shakeIndex === idx ? 'animate-[shake_0.5s_ease]' : ''
+                        }`}
                     >
                        <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center font-black text-lg transition-colors ${labelClass}`}>
                           {OptionLabel[idx] || match?.[1] || "?"}
@@ -245,6 +271,13 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onClose }) => {
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-8px); }
+          40% { transform: translateX(8px); }
+          60% { transform: translateX(-5px); }
+          80% { transform: translateX(5px); }
+        }
       `}} />
 
     </div>

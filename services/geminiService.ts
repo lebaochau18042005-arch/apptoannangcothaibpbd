@@ -1,5 +1,5 @@
 import { SYSTEM_INSTRUCTION, SYSTEM_INSTRUCTION_GENERAL, STRUCTURE_VAO_10, STRUCTURE_VAO_10_TRACNGHIEM, STRUCTURE_TOT_NGHIEP, FALLBACK_ORDER, getSubjectConfig } from '../constants';
-import { ExamRequest, ExamMode, ExamFormat, AIModelId, UploadedFile, QuestionSource, BankQuestion } from '../types';
+import { ExamRequest, ExamMode, ExamFormat, AIModelId, UploadedFile, QuestionSource, BankQuestion, GradingResult } from '../types';
 
 // ============================================
 // HÀM GỌI API CHUNG (có fallback)
@@ -471,5 +471,42 @@ BẮT BUỘC: ĐỐI TƯỢNG JSON LÀ KẾT QUẢ ĐẦU RA DUY NHẤT. KHÔNG 
     console.error('Lỗi khi AI chấm bài: ', error);
     throw new Error('Đã xảy ra lỗi trong quá trình phân tích bài làm: ' + error.message);
   }
+};
+
+// ============================================
+// PHÂN TÍCH NÂNG CAO BÀI LÀM (AI Agent Reason-Observe)
+// ============================================
+export const analyzeStudentWeakness = async (
+  apiKey: string,
+  gradingResult: GradingResult,
+  subject: string,
+  modelId: AIModelId,
+  onStatus?: (msg: string) => void,
+): Promise<string> => {
+  const resultJson = JSON.stringify(gradingResult, null, 2);
+
+  const systemPrompt = `Bạn là một Cố Vấn Học Tập AI chuyên nghiệp, am hiểu chương trình phổ thông Việt Nam.
+Bạn nhận dữ liệu chấm điểm JSON và thực hiện Phân Tích Sâu theo mô hình Agents Reason-Observe:
+1. REASON: Phân tích điểm mạnh & điểm yếu cụ thể dựa trên từng câu sai.
+2. OBSERVE: Xác định mảng kiến thức còn thiếu hụt.
+3. ADVISE: Đề xuất dạng bài tập bổ trợ cụ thể, sát với chương trình.
+4. PREDICT: Dự đoán điểm thi thực tế nếu tiếp tục học ở mức này.
+Trả lời bằng Markdown đẹp, thân thiện, khích lệ nhưng thực tế.`;
+
+  const prompt = `Môn học: **${subject}**
+
+Kết quả chấm điểm:
+\`\`\`json
+${resultJson}
+\`\`\`
+
+Hãy thực hiện **Phân Tích Nâng Cao** đầy đủ 4 bước. Báo cáo cần:
+- Tiêu đề rõ ràng từng phần (## emoji Tên Phần)
+- Chỉ thẳng câu/phần nào sai và lý do sai
+- Gợi ý cụ thể (tên dạng bài, kiến thức cần bổ sung)
+- Dự đoán có cơ sở: "Nếu duy trì phong độ, dự đoán đạt khoảng X-Y điểm"`;
+
+  const parts = [{ text: prompt }];
+  return callGeminiWithFallback(apiKey, modelId, parts, systemPrompt, onStatus);
 };
 

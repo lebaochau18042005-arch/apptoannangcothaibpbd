@@ -75,6 +75,14 @@ const App: React.FC = () => {
   // ====== State: Active View ======
   const [activeView, setActiveView] = useState<'create' | 'bank' | 'history' | 'student-portal' | 'ai-grader'>('create');
 
+  // ====== State: Dark Mode ======
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('edugenvn_dark_mode') === '1');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+    localStorage.setItem('edugenvn_dark_mode', isDarkMode ? '1' : '0');
+  }, [isDarkMode]);
+
   // ============================================
   // KHỞI TẠO
   // ============================================
@@ -693,6 +701,19 @@ const App: React.FC = () => {
                 </button>
               </div>
             )}
+
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={() => setIsDarkMode(prev => !prev)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                isDarkMode
+                  ? 'border-indigo-300 bg-indigo-900/60 text-indigo-100 hover:bg-indigo-800'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+              title="Toggle Dark Mode"
+            >
+              {isDarkMode ? '☀️' : '🌙'}
+            </button>
 
             {/* API Key button */}
             <button
