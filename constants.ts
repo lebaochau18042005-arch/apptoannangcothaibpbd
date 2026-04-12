@@ -193,9 +193,69 @@ NGUYÊN TẮC TỐI THƯỢNG
 ================================
 Nếu câu hỏi cần hình minh họa (sơ đồ, biểu đồ, bản đồ sơ lược, hình vẽ):
 - Đặt SVG TRỰC TIẾP (KHÔNG dùng code block)
-- viewBox tối đa 400x350, stroke-width: 1.5-2.5px
+- viewBox tối đa 500x350, stroke-width: 1.5-2.5px
 - Nhãn: text SVG tiếng Việt, font-size 12-14px
 - Hình tự chứa, KHÔNG dùng external CSS/JS
+- KHÔNG được để biểu đồ trống: PHẢI vẽ đầy đủ dữ liệu đưa ra trong bài
+
+VÍ DỤ BIỂU ĐỒ ĐOẠN THẲNG / CỘT thống kê — Phải vẽ đủ thanh dữ liệu:
+<svg viewBox="0 0 480 320" xmlns="http://www.w3.org/2000/svg">
+  <!-- Nền -->
+  <rect width="480" height="320" fill="#f8f9ff"/>
+  <!-- Tiêu đề -->
+  <text x="240" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Số học sinh theo điểm số</text>
+  <!-- Lưới ngang -->
+  <line x1="60" y1="50" x2="60" y2="270" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="60" y1="270" x2="440" y2="270" stroke="#aaa" stroke-width="1.5"/>
+  <!-- Đường kẻ ngang mờ -->
+  <line x1="60" y1="220" x2="440" y2="220" stroke="#ddd" stroke-width="0.8"/>
+  <line x1="60" y1="170" x2="440" y2="170" stroke="#ddd" stroke-width="0.8"/>
+  <line x1="60" y1="120" x2="440" y2="120" stroke="#ddd" stroke-width="0.8"/>
+  <line x1="60" y1="70" x2="440" y2="70" stroke="#ddd" stroke-width="0.8"/>
+  <!-- Nhãn trục Y -->
+  <text x="50" y="274" text-anchor="end" font-size="11" fill="#555">0</text>
+  <text x="50" y="224" text-anchor="end" font-size="11" fill="#555">1</text>
+  <text x="50" y="174" text-anchor="end" font-size="11" fill="#555">2</text>
+  <text x="50" y="124" text-anchor="end" font-size="11" fill="#555">3</text>
+  <text x="50" y="74" text-anchor="end" font-size="11" fill="#555">4</text>
+  <!-- Nhãn trục Y (tên) -->
+  <text x="20" y="165" text-anchor="middle" font-size="12" fill="#333" font-weight="bold" transform="rotate(-90,20,165)">Số học sinh</text>
+  <!-- Dữ liệu: (x: 4,5,6,7,8,9) → (y_hs: 1,2,4,5,3,2) — mỗi ô 50px, điểm gốc (60,270), 1 hs = 50px -->
+  <!-- Cột điểm 4: 1 hs, height=50 -->
+  <rect x="75" y="220" width="30" height="50" fill="#4a90d9" stroke="#356ab0" stroke-width="0.8"/>
+  <text x="90" y="215" text-anchor="middle" font-size="11" font-weight="bold" fill="#356ab0">1</text>
+  <!-- Cột điểm 5: 2 hs, height=100 -->
+  <rect x="135" y="170" width="30" height="100" fill="#4a90d9" stroke="#356ab0" stroke-width="0.8"/>
+  <text x="150" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#356ab0">2</text>
+  <!-- Cột điểm 6: 4 hs, height=200 -->
+  <rect x="195" y="70" width="30" height="200" fill="#4a90d9" stroke="#356ab0" stroke-width="0.8"/>
+  <text x="210" y="65" text-anchor="middle" font-size="11" font-weight="bold" fill="#356ab0">4</text>
+  <!-- Cột điểm 7: 5 hs, height=250 (chận tối đa) -->
+  <rect x="255" y="20" width="30" height="250" fill="#2ecc71" stroke="#27ae60" stroke-width="0.8"/>
+  <text x="270" y="16" text-anchor="middle" font-size="11" font-weight="bold" fill="#27ae60">5</text>
+  <!-- Cột điểm 8: 3 hs, height=150 -->
+  <rect x="315" y="120" width="30" height="150" fill="#4a90d9" stroke="#356ab0" stroke-width="0.8"/>
+  <text x="330" y="115" text-anchor="middle" font-size="11" font-weight="bold" fill="#356ab0">3</text>
+  <!-- Cột điểm 9: 2 hs, height=100 -->
+  <rect x="375" y="170" width="30" height="100" fill="#4a90d9" stroke="#356ab0" stroke-width="0.8"/>
+  <text x="390" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#356ab0">2</text>
+  <!-- Nhãn trục X -->
+  <text x="90" y="285" text-anchor="middle" font-size="11" fill="#333">4</text>
+  <text x="150" y="285" text-anchor="middle" font-size="11" fill="#333">5</text>
+  <text x="210" y="285" text-anchor="middle" font-size="11" fill="#333">6</text>
+  <text x="270" y="285" text-anchor="middle" font-size="11" fill="#333">7</text>
+  <text x="330" y="285" text-anchor="middle" font-size="11" fill="#333">8</text>
+  <text x="390" y="285" text-anchor="middle" font-size="11" fill="#333">9</text>
+  <text x="240" y="308" text-anchor="middle" font-size="12" fill="#333" font-weight="bold">Điểm số</text>
+</svg>
+
+QUY TẮC BIỂU ĐỒ ĐOẠN THẲNG / THỐNG KÊ (Bắt buộc):
+- Mỗi cột của biểu đồ được vẽ bằng thẻ <rect>, chiều cao tỷ lệ với giá trị thực tế dữ liệu
+- Nhãn giá trị (số học sinh) gần cạnh đỉnh của mỗi thanh
+- Nhãn trục x (tên biến) đặt dưới đáy mỗi cột  
+- Nhãn trục y (số lượng) đặt vuông góc bên trái
+- PHẢI tính toán toạ độ chính xác: height = số_hs x hệ_số; y = y_gốc - height
+- KHÔNG vẽ biểu đồ trống! Phải có đủ số thanh theo dữ liệu đề bài.
 `;
 
 // ============================================
@@ -323,13 +383,63 @@ QUY TẮC ĐỒ THỊ HÀM SỐ:
 - Lưới nền nhẹ (#e0e0e0) giúp đọc tọa độ
 
 QUY TẮC CHUNG:
-- viewBox tối đa 400x350, stroke-width: 1.5-2.5px
+- viewBox tối đa 500x350, stroke-width: 1.5-2.5px
 - Nhãn: text SVG tiếng Việt, font-size 12-14px, font-weight bold
 - Màu: đen (#000) nét chính, đỏ (#cc0000) đường cong/nét đặc biệt, xanh (#0066cc) trục tọa độ  
 - Đánh dấu đỉnh bằng circle r=3-4
 - Đường nét đứt: stroke-dasharray="6,4"
 - Hình tự chứa, KHÔNG dùng external CSS/JS
 - KHÔNG bọc SVG trong code block (\`\`\`), đặt SVG TRỰC TIẾP trong văn bản
+
+VÍ DỤ 3 — BIỂU ĐỒ ĐOẠN THẲNG / HÌNH CỘT thống kê (ĐẶC BIỆT QUAN TRỌNG):
+Khi đề bài có biểu đồ đoạn thẳng/cột, PHẢI vẽ đầy đủ thanh cột theo dữ liệu:
+<svg viewBox="0 0 480 310" xmlns="http://www.w3.org/2000/svg">
+  <rect width="480" height="310" fill="#f8f9ff"/>
+  <text x="240" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Số học sinh theo điểm số</text>
+  <!-- Trục -->
+  <line x1="60" y1="40" x2="60" y2="260" stroke="#333" stroke-width="1.8"/>
+  <line x1="60" y1="260" x2="450" y2="260" stroke="#333" stroke-width="1.8"/>
+  <!-- Lưới ngang -->
+  <line x1="60" y1="210" x2="450" y2="210" stroke="#ddd" stroke-width="0.8"/>
+  <line x1="60" y1="160" x2="450" y2="160" stroke="#ddd" stroke-width="0.8"/>
+  <line x1="60" y1="110" x2="450" y2="110" stroke="#ddd" stroke-width="0.8"/>
+  <line x1="60" y1="60" x2="450" y2="60" stroke="#ddd" stroke-width="0.8"/>
+  <!-- Nhãn Y -->
+  <text x="52" y="264" text-anchor="end" font-size="11" fill="#555">0</text>
+  <text x="52" y="214" text-anchor="end" font-size="11" fill="#555">1</text>
+  <text x="52" y="164" text-anchor="end" font-size="11" fill="#555">2</text>
+  <text x="52" y="114" text-anchor="end" font-size="11" fill="#555">3</text>
+  <text x="52" y="64" text-anchor="end" font-size="11" fill="#555">4</text>
+  <text x="18" y="160" text-anchor="middle" font-size="11" fill="#333" font-weight="bold" transform="rotate(-90,18,160)">Số HS</text>
+  <!-- Thanh cột (dữ liệu: 1,2,4,5,3,2 cho x=4,5,6,7,8,9) 1hs=50px, gốc tại y=260 -->
+  <rect x="78" y="210" width="36" height="50" fill="#4a90d9"/>
+  <text x="96" y="205" text-anchor="middle" font-size="11" font-weight="bold" fill="#2c5f8a">1</text>
+  <rect x="143" y="160" width="36" height="100" fill="#4a90d9"/>
+  <text x="161" y="155" text-anchor="middle" font-size="11" font-weight="bold" fill="#2c5f8a">2</text>
+  <rect x="208" y="60" width="36" height="200" fill="#4a90d9"/>
+  <text x="226" y="55" text-anchor="middle" font-size="11" font-weight="bold" fill="#2c5f8a">4</text>
+  <rect x="273" y="10" width="36" height="250" fill="#2ecc71"/>
+  <text x="291" y="7" text-anchor="middle" font-size="11" font-weight="bold" fill="#27ae60">5</text>
+  <rect x="338" y="110" width="36" height="150" fill="#4a90d9"/>
+  <text x="356" y="105" text-anchor="middle" font-size="11" font-weight="bold" fill="#2c5f8a">3</text>
+  <rect x="403" y="160" width="36" height="100" fill="#4a90d9"/>
+  <text x="421" y="155" text-anchor="middle" font-size="11" font-weight="bold" fill="#2c5f8a">2</text>
+  <!-- Nhãn X -->
+  <text x="96" y="275" text-anchor="middle" font-size="11" fill="#333">4</text>
+  <text x="161" y="275" text-anchor="middle" font-size="11" fill="#333">5</text>
+  <text x="226" y="275" text-anchor="middle" font-size="11" fill="#333">6</text>
+  <text x="291" y="275" text-anchor="middle" font-size="11" fill="#333">7</text>
+  <text x="356" y="275" text-anchor="middle" font-size="11" fill="#333">8</text>
+  <text x="421" y="275" text-anchor="middle" font-size="11" fill="#333">9</text>
+  <text x="255" y="295" text-anchor="middle" font-size="12" fill="#333" font-weight="bold">Điểm số</text>
+</svg>
+
+QUY TẮC BIỂU ĐỒ ĐOẠN THẲNG / THỐNG KÊ (PHẢI TUÂN ĐÚNG):
+- Mỗi cột của biểu đồ được vẽ bằng <rect>, chiều cao TỶ LỆ với giá trị dữ liệu thực tế
+- TUYỆT ĐỐI KHÔNG để biểu đồ trống — PHẢI có đủ số cột theo dữ liệu
+- Công thức tính height của cột: height = số_lượng × hệ_số_tỷ_lệ (1 đơn vị = N px)
+- Công thức tính y của cột: y = y_gốc - height
+- Nhãn số lượng gần đỉnh cột (y - 5px), nhãn tên biến dưới chân cột
 `;
 
 
